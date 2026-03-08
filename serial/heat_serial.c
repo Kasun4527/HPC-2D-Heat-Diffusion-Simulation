@@ -70,6 +70,15 @@ int main(int argc, char *argv[]) {
                      (end.tv_nsec - start.tv_nsec) / 1e9;
     
     printf("Execution time: %.6f seconds\n", elapsed);
+
+        // Save results
+    save_grid("../data/output_results/serial_output.txt", grid, rows, cols);
+    save_timing("../results/timing.csv", "serial", rows, cols, timesteps, 1, elapsed);
     
+    // Clean up
+    free_grid(grid, rows);
+    free_grid(new_grid, rows);
+    
+    printf("Simulation completed successfully.\n");
     return 0;
 }
