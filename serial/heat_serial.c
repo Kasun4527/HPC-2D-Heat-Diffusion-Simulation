@@ -29,5 +29,16 @@ int main(int argc, char *argv[]) {
     printf("Grid size: %d x %d\n", rows, cols);
     printf("Timesteps: %d\n", timesteps);
     printf("Alpha: %f\n\n", alpha);
+
+    // Allocate and initialize grids
+    double **grid = allocate_grid(rows, cols);
+    double **new_grid = allocate_grid(rows, cols);
+    
+    if (!grid || !new_grid) {
+        fprintf(stderr, "Error: Failed to allocate memory\n");
+        return 1;
+    }
+    
+    initialize_grid(grid, rows, cols);
     return 0;
 }
