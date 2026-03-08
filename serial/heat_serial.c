@@ -40,5 +40,36 @@ int main(int argc, char *argv[]) {
     }
     
     initialize_grid(grid, rows, cols);
+
+    // Start timing
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    
+    // Main simulation loop
+    for (int t = 0; t < timesteps; t++) {
+        // Update interior cells
+        for (int i = 1; i < rows - 1; i++) {
+            for (int j = 1; j < cols - 1; j++) {
+                new_grid[i][j] = grid[i][j] + alpha * (
+                    grid[i-1][j] + grid[i+1][j] +
+                    grid[i][j-1] + grid[i][j+1] -
+                    4.0 * grid[i][j]
+                );
+            }
+        }
+        
+        // Swap grids
+        double **temp = grid;
+        grid = new_grid;
+        new_grid = temp;
+    }
+    
+    // End timing
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double elapsed = (end.tv_sec - start.tv_sec) + 
+                     (end.tv_nsec - start.tv_nsec) / 1e9;
+    
+    printf("Execution time: %.6f seconds\n", elapsed);
+    
     return 0;
 }
