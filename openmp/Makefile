@@ -1,4 +1,4 @@
-# Makefile for OpenMP Heat Diffusion
+
 
 CC = gcc
 CFLAGS = -O3 -Wall -Wextra -std=c99 -fopenmp
