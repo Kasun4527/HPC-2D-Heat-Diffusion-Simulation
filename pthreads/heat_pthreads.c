@@ -80,15 +80,25 @@ int main(int argc, char *argv[]) {
     double **grid = allocate_grid(rows, cols);
     double **new_grid = allocate_grid(rows, cols);
 
+    if (!grid || !new_grid)
+    {
+        fprintf(stderr, "Error: Failed to allocate memory\n");
+        return 1;
+    }
     //initialize the grid
-    init_grid(grid, rows, cols);
+    init_grid(grid, rows, cols); 
+    
+    //initialize barrier
+    pthread_barrier_t barrier;
+    pthread_barrier_init(&barrier, NULL, num_threads);
 
     //create threads
     pthread_t *threads = malloc(num_threads * sizeof(pthread_t));
     ThreadData *thread_data = malloc(num_threads * sizeof(ThreadData));
-    pthread_barrier_t barrier;
-    pthread_barrier_init(&barrier, NULL, num_threads);
 
+    //calculate rows per thread
+    int rows_per_thread = (rows - 2) / num_threads;
+    
     // start timing
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
