@@ -23,3 +23,4 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
+.PHONY: all clean run
