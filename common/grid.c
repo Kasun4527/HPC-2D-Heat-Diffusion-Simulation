@@ -28,6 +28,7 @@ double** allocate_grid(int rows, int cols) {
 }
 
 void free_grid(double** grid, int rows) {
+    (void)rows;
     if (!grid) return;
     
     // Free contiguous data block

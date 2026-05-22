@@ -1,20 +1,22 @@
 /*
- * MPI Heat Diffusion Simulation
+ * Hybrid (MPI + OpenMP) Heat Diffusion Simulation
  *
- * Distributed-memory implementation using horizontal row decomposition.
+ * Combines MPI for inter-process communication and OpenMP for
+ * intra-process shared-memory parallelism.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
+#include <omp.h>
 #include "../common/grid.h"
 #include "../common/utils.h"
 
 int main(int argc, char *argv[]) {
-    int rank, size;
+    int rank, size, provided;
 
-    MPI_Init(&argc, &argv);
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -22,18 +24,23 @@ int main(int argc, char *argv[]) {
     int cols = 1000;
     int timesteps = 1000;
     double alpha = 0.1;
+    int num_threads = 4;
 
     if (argc >= 2) rows = atoi(argv[1]);
     if (argc >= 3) cols = atoi(argv[2]);
     if (argc >= 4) timesteps = atoi(argv[3]);
     if (argc >= 5) alpha = atof(argv[4]);
+    if (argc >= 6) num_threads = atoi(argv[5]);
+
+    omp_set_num_threads(num_threads);
 
     if (rank == 0) {
-        printf("MPI Heat Diffusion Simulation\n");
+        printf("Hybrid (MPI + OpenMP) Heat Diffusion Simulation\n");
         printf("Grid size: %d x %d\n", rows, cols);
         printf("Timesteps: %d\n", timesteps);
         printf("Alpha: %f\n", alpha);
-        printf("MPI Processes: %d\n\n", size);
+        printf("MPI Processes: %d\n", size);
+        printf("OpenMP Threads per process: %d\n\n", num_threads);
         ensure_output_directories();
     }
 
@@ -43,6 +50,7 @@ int main(int argc, char *argv[]) {
     if (rank < extra_rows) local_rows++;
 
     int total_local_rows = local_rows + 2;
+    int total_parallelism = size * num_threads;
 
     double **local_grid = allocate_grid(total_local_rows, cols);
     double **local_new_grid = allocate_grid(total_local_rows, cols);
@@ -52,6 +60,7 @@ int main(int argc, char *argv[]) {
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < total_local_rows; i++) {
         int global_row = start_row + i - 1;
         for (int j = 0; j < cols; j++) {
@@ -84,6 +93,7 @@ int main(int argc, char *argv[]) {
         int start_i = (rank == 0) ? 2 : 1;
         int end_i = (rank == size - 1) ? local_rows : local_rows + 1;
 
+        #pragma omp parallel for schedule(static)
         for (int i = start_i; i < end_i; i++) {
             for (int j = 1; j < cols - 1; j++) {
                 local_new_grid[i][j] = local_grid[i][j] + alpha * (
@@ -149,9 +159,11 @@ int main(int argc, char *argv[]) {
         printf("Execution time: %.6f seconds\n", max_elapsed);
         printf("RMSE vs serial baseline: %.10e\n", rmse);
 
-        save_grid("../data/output_results/mpi_output.txt", global_grid, rows, cols);
-        save_timing("../results/timing.csv", "mpi", rows, cols, timesteps, size, max_elapsed);
-        save_rmse("../results/rmse.csv", "mpi", rows, cols, timesteps, alpha, size, rmse);
+        save_grid("../data/output_results/hybrid_output.txt", global_grid, rows, cols);
+        save_timing("../results/timing.csv", "hybrid", rows, cols, timesteps,
+                    total_parallelism, max_elapsed);
+        save_rmse("../results/rmse.csv", "hybrid", rows, cols, timesteps, alpha,
+                  total_parallelism, rmse);
 
         free_grid(global_grid, rows);
         free_grid(serial_grid, rows);

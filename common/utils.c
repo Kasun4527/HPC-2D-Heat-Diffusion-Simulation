@@ -7,38 +7,71 @@
 #include <string.h>
 #include <math.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
+#include "grid.h"
 #include "utils.h"
 
+static void make_directory(const char* path) {
+#ifdef _WIN32
+    _mkdir(path);
+#else
+    mkdir(path, 0777);
+#endif
+}
+
+void ensure_output_directories(void) {
+    make_directory("../results");
+    make_directory("../data");
+    make_directory("../data/output_results");
+}
+
 void save_timing(const char* filename, const char* implementation,
-                 int rows, int cols, int timesteps, int parallelism, 
+                 int rows, int cols, int timesteps, int parallelism,
                  double time) {
-    // Check if file exists to determine if we need to write header
     struct stat st;
     int file_exists = (stat(filename, &st) == 0);
-    
+
     FILE* file = fopen(filename, "a");
     if (!file) {
         fprintf(stderr, "Error: Cannot open file %s for writing\n", filename);
         return;
     }
-    
-    // Write header if this is a new file
+
     if (!file_exists) {
         fprintf(file, "implementation,rows,cols,timesteps,parallelism,time_seconds\n");
     }
-    
-    // Write timing data
-    fprintf(file, "%s,%d,%d,%d,%d,%.6f\n", 
+
+    fprintf(file, "%s,%d,%d,%d,%d,%.6f\n",
             implementation, rows, cols, timesteps, parallelism, time);
-    
+
     fclose(file);
+}
+
+void simulate_heat_serial(double*** grid, double*** new_grid,
+                          int rows, int cols, int timesteps, double alpha) {
+    for (int t = 0; t < timesteps; t++) {
+        for (int i = 1; i < rows - 1; i++) {
+            for (int j = 1; j < cols - 1; j++) {
+                (*new_grid)[i][j] = (*grid)[i][j] + alpha * (
+                    (*grid)[i-1][j] + (*grid)[i+1][j] +
+                    (*grid)[i][j-1] + (*grid)[i][j+1] -
+                    4.0 * (*grid)[i][j]
+                );
+            }
+        }
+
+        double** temp = *grid;
+        *grid = *new_grid;
+        *new_grid = temp;
+    }
 }
 
 double calculate_rmse(double** grid1, double** grid2, int rows, int cols) {
     double sum_squared_error = 0.0;
     int count = 0;
-    
-    // Calculate RMSE for interior cells only (boundaries are fixed)
+
     for (int i = 1; i < rows - 1; i++) {
         for (int j = 1; j < cols - 1; j++) {
             double diff = grid1[i][j] - grid2[i][j];
@@ -46,47 +79,44 @@ double calculate_rmse(double** grid1, double** grid2, int rows, int cols) {
             count++;
         }
     }
-    
-    return sqrt(sum_squared_error / count);
+
+    return count > 0 ? sqrt(sum_squared_error / count) : 0.0;
 }
 
 void save_rmse(const char* filename, const char* implementation,
-               int rows, int cols, double rmse) {
-    // Check if file exists to determine if we need to write header
+               int rows, int cols, int timesteps, double alpha,
+               int parallelism, double rmse) {
     struct stat st;
     int file_exists = (stat(filename, &st) == 0);
-    
+
     FILE* file = fopen(filename, "a");
     if (!file) {
         fprintf(stderr, "Error: Cannot open file %s for writing\n", filename);
         return;
     }
-    
-    // Write header if this is a new file
+
     if (!file_exists) {
-        fprintf(file, "implementation,rows,cols,rmse\n");
+        fprintf(file, "implementation,rows,cols,timesteps,alpha,parallelism,rmse\n");
     }
-    
-    // Write RMSE data
-    fprintf(file, "%s,%d,%d,%.10e\n", implementation, rows, cols, rmse);
-    
+
+    fprintf(file, "%s,%d,%d,%d,%.6f,%d,%.10e\n",
+            implementation, rows, cols, timesteps, alpha, parallelism, rmse);
+
     fclose(file);
 }
 
-int parse_config(const char* filename, int* rows, int* cols, 
+int parse_config(const char* filename, int* rows, int* cols,
                  int* timesteps, double* alpha) {
     FILE* file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Error: Cannot open config file %s\n", filename);
         return -1;
     }
-    
+
     char line[256];
     while (fgets(line, sizeof(line), file)) {
-        // Skip comments and empty lines
         if (line[0] == '#' || line[0] == '\n') continue;
-        
-        // Parse key-value pairs
+
         char key[64];
         if (sscanf(line, "%s", key) == 1) {
             if (strcmp(key, "rows") == 0) {
@@ -100,7 +130,7 @@ int parse_config(const char* filename, int* rows, int* cols,
             }
         }
     }
-    
+
     fclose(file);
     return 0;
 }
