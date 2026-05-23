@@ -8,7 +8,7 @@
 typedef struct {
     double **grid;
     double **new_grid;
-    int start_row;
+    int start_rows;
     int end_row;
     int cols;
     double alpha;
@@ -20,7 +20,7 @@ void *compute_heat(void *arg) {
     ThreadData *data = (ThreadData *)arg;
 
     for (int t = 0; t < data->timesteps; t++) {
-        for (int i = data->start_row; i < data->end_row; i++) {
+        for (int i = data->start_rows; i < data->end_row; i++) {
             for (int j = 1; j < data->cols - 1; j++) {
                 data->new_grid[i][j] = data->grid[i][j] + data->alpha * (
                     data->grid[i-1][j] + data->grid[i+1][j] +
@@ -32,7 +32,7 @@ void *compute_heat(void *arg) {
 
         pthread_barrier_wait(data->barrier);
 
-        if (data->start_row == 1) {
+        if (data->start_rows == 1) {
             double **temp = data->grid;
             data->grid = data->new_grid;
             data->new_grid = temp;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < num_threads; i++) {
         thread_data[i].grid = grid;
         thread_data[i].new_grid = new_grid;
-        thread_data[i].start_row = 1 + i * rows_per_thread;
+        thread_data[i].start_rows = 1 + i * rows_per_thread;
         thread_data[i].end_row = (i == num_threads - 1) ? rows - 1 :
                                   1 + (i + 1) * rows_per_thread;
         thread_data[i].cols = cols;
