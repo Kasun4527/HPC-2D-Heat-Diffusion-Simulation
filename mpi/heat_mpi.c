@@ -14,9 +14,13 @@
 int main(int argc, char *argv[]) {
     int rank, size;
 
+
+
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank); //giving ranks to each process
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+
 
     int rows = 1000;
     int cols = 1000;
@@ -28,6 +32,8 @@ int main(int argc, char *argv[]) {
     if (argc >= 4) timesteps = atoi(argv[3]);
     if (argc >= 5) alpha = atof(argv[4]);
 
+
+
     if (rank == 0) {
         printf("MPI Heat Diffusion Simulation\n");
         printf("Grid size: %d x %d\n", rows, cols);
@@ -37,14 +43,14 @@ int main(int argc, char *argv[]) {
         ensure_output_directories();
     }
 
-    int local_rows = rows / size;
+    int local_row = rows / size;
     int extra_rows = rows % size;
-    int start_row = rank * local_rows + (rank < extra_rows ? rank : extra_rows);
-    if (rank < extra_rows) local_rows++;
+    int start_row = rank * local_row + (rank < extra_rows ? rank : extra_rows);
+    if (rank < extra_rows) local_row++;
 
-    int total_local_rows = local_rows + 2;
+    int total_local_rows = local_row + 2;
 
-    double **local_grid = allocate_grid(total_local_rows, cols);
+    double **local_grid = allocate_grid(total_local_row, cols);
     double **local_new_grid = allocate_grid(total_local_rows, cols);
 
     if (!local_grid || !local_new_grid) {
