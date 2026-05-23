@@ -1,3 +1,7 @@
+# Makefile for POSIX Threads Heat Diffusion
+
+CC = gcc
+CFLAGS = -O3 -Wall -Wextra -std=c99 -D_POSIX_C_SOURCE=200112L -pthread
 # makefile - posix threads heat diffusion
 
 CC = gcc
@@ -23,4 +27,5 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
+.PHONY: all clean run
 .PHONY: all clean run

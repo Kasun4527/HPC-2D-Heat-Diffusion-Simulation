@@ -6,6 +6,8 @@ The simulation solves a 2D heat diffusion problem over a rectangular grid. Bound
 
 OpenMP parallelizes the shared-memory version by distributing the outer grid-row loop across threads. Each thread updates a separate subset of interior rows for the current timestep. Because each update reads from the old grid and writes to a separate new grid, no thread writes to the same grid cell during the update phase.
 
+The POSIX Threads implementation follows the same shared-memory decomposition but creates and joins pthreads explicitly. Rows are divided among worker threads, and a barrier synchronizes all threads after each timestep before the shared grid pointers are swapped.
+
 MPI parallelizes the distributed-memory version by decomposing the grid into horizontal row blocks. Each MPI process owns a block of rows and exchanges halo rows with neighbouring processes before each timestep. The root process gathers all local row blocks after the final timestep to reconstruct the complete grid.
 
 The hybrid version combines both ideas. MPI distributes row blocks across processes, and OpenMP parallelizes the row updates inside each process. The total parallelism for the hybrid implementation is calculated as:
