@@ -130,6 +130,6 @@ int main(int argc, char *argv[]) {
     free_grid(serial_grid, rows);
     free_grid(serial_new_grid, rows);
 
-    printf("Simulation completed successfully.\n");
+    printf("Simulation successfully completed.\n");
     return 0;
 }
