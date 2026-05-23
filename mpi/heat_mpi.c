@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
         double **serial_grid = allocate_grid(rows, cols);
         double **serial_new_grid = allocate_grid(rows, cols);
         if (!serial_grid || !serial_new_grid) {
-            fprintf(stderr, "Process 0: Failed to allocate serial baseline memory\n");
+            fprintf(stderr, "Process 0: Error when allocating serial baseline memory\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
