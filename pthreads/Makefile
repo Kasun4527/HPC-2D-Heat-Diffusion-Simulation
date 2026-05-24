@@ -5,7 +5,7 @@ CFLAGS = -O3 -Wall -Wextra -std=c99 -D_POSIX_C_SOURCE=200112L -pthread
 # makefile - posix threads heat diffusion
 
 CC = gcc
-CFLAGS = -03 -Wall -std=c99 -D_POSIX_C_SOURCE=200112L -pthread
+CFLAGS = -O3 -Wall -std=c99 -D_POSIX_C_SOURCE=200112L -pthread
 LDFLAGS = -lm -pthread
 TARGET = heat_pthreads
 COMMON = ../common

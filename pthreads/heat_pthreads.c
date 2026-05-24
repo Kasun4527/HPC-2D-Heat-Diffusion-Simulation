@@ -31,13 +31,12 @@ void *compute_heat(void *arg) {
         }
 
         pthread_barrier_wait(data->barrier);
-
-        if (data->start_rows == 1) {
-            double **temp = data->grid;
-            data->grid = data->new_grid;
-            data->new_grid = temp;
-        }
-
+        
+        // swap grids locally for each thread
+        double **temp = data->grid;
+        data->grid = data->new_grid;
+        data->new_grid = temp;
+        
         pthread_barrier_wait(data->barrier);
     }
 
@@ -70,10 +69,13 @@ int main(int argc, char *argv[]) {
 
     if (!grid || !new_grid) {
         fprintf(stderr, "Error: Failed to allocate memory\n");
+        free_grid(grid, rows);
+        free_grid(new_grid, rows);
         return 1;
     }
 
-    initialize_grid(grid, rows, cols);
+    //initialize the grids
+    initialize_grid(grid, rows, cols); 
     initialize_grid(new_grid, rows, cols);
 
     pthread_barrier_t barrier;
@@ -108,27 +110,40 @@ int main(int argc, char *argv[]) {
     double time_taken = (end.tv_sec - start.tv_sec) +
                         (end.tv_nsec - start.tv_nsec) / 1e9;
 
+    printf("Execution time: %.6f seconds\n", time_taken);
+
+    // Select the correct grid based on timesteps parity
+    double **final_grid = (timesteps % 2 == 0) ? grid : new_grid;
+
+    // Calculate RMSE vs serial baseline
     double **serial_grid = allocate_grid(rows, cols);
     double **serial_new_grid = allocate_grid(rows, cols);
-    initialize_grid(serial_grid, rows, cols);
-    initialize_grid(serial_new_grid, rows, cols);
-    simulate_heat_serial(&serial_grid, &serial_new_grid, rows, cols, timesteps, alpha);
-    double rmse = calculate_rmse(grid, serial_grid, rows, cols);
+    double rmse = -1.0;
+    if (!serial_grid || !serial_new_grid) {
+        fprintf(stderr, "Error: Failed to allocate serial baseline memory\n");
+    } else {
+        initialize_grid(serial_grid, rows, cols);
+        initialize_grid(serial_new_grid, rows, cols);
+        simulate_heat_serial(&serial_grid, &serial_new_grid, rows, cols, timesteps, alpha);
+        rmse = calculate_rmse(final_grid, serial_grid, rows, cols);
+    }
 
-    printf("Execution time: %.6f seconds\n", time_taken);
     printf("RMSE vs serial baseline: %.10e\n", rmse);
 
-    save_grid("../data/output_results/pthreads_output.txt", grid, rows, cols);
-    save_timing("../results/timing.csv", "pthreads", rows, cols, timesteps, num_threads, time_taken);
-    save_rmse("../results/rmse.csv", "pthreads", rows, cols, timesteps, alpha, num_threads, rmse);
+    //save results
+    save_grid("../data/output_results/pthreads_output.txt", final_grid, rows, cols); //txt
+    save_timing("../results/timing.csv", "pthreads", rows, cols, timesteps, num_threads, time_taken); //csv
+    if (rmse >= 0.0) {
+        save_rmse("../results/rmse.csv", "pthreads", rows, cols, timesteps, alpha, num_threads, rmse); //csv
+    }
 
     pthread_barrier_destroy(&barrier);
     free(threads);
     free(thread_data);
     free_grid(grid, rows);
     free_grid(new_grid, rows);
-    free_grid(serial_grid, rows);
-    free_grid(serial_new_grid, rows);
+    if (serial_grid) free_grid(serial_grid, rows);
+    if (serial_new_grid) free_grid(serial_new_grid, rows);
 
     printf("Simulation successfully completed.\n");
     return 0;
