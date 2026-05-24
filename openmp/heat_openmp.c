@@ -25,11 +25,11 @@ int main(int argc, char *argv[]) {
 
     omp_set_num_threads(num_threads);
 
-    printf("OpenMP Heat Diffusion Simulation\n");
-    printf("Grid size: %d x %d\n", rows, cols);
-    printf("Timesteps: %d\n", timesteps);
+    printf("OpenMP 2D-Heat Diffusion Simulation\n");
+    printf("Grid size of simulation: %d x %d\n", rows, cols);
+    printf("Timesteps to perform: %d\n", timesteps);
     printf("Alpha: %f\n", alpha);
-    printf("Threads: %d\n\n", num_threads);
+    printf("Number of threads: %d\n\n", num_threads);
 
     ensure_output_directories();
 
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     double **new_grid = allocate_grid(rows, cols);
 
     if (!grid || !new_grid) {
-        fprintf(stderr, "Error: Failed to allocate memory\n");
+        fprintf(stderr, " Error when memory allocating\n");
         free_grid(grid, rows);
         free_grid(new_grid, rows);
         return 1;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     double **serial_grid = allocate_grid(rows, cols);
     double **serial_new_grid = allocate_grid(rows, cols);
     if (!serial_grid || !serial_new_grid) {
-        fprintf(stderr, "Error: Failed to allocate serial baseline memory\n");
+        fprintf(stderr, "Error when allocating serial baseline memory\n");
         free_grid(grid, rows);
         free_grid(new_grid, rows);
         free_grid(serial_grid, rows);
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     simulate_heat_serial(&serial_grid, &serial_new_grid, rows, cols, timesteps, alpha);
     double rmse = calculate_rmse(grid, serial_grid, rows, cols);
 
-    printf("Execution time: %.6f seconds\n", elapsed);
+    printf("Time to execution: %.6f seconds\n", elapsed);
     printf("RMSE vs serial baseline: %.10e\n", rmse);
 
     save_grid("../data/output_results/openmp_output.txt", grid, rows, cols);
@@ -95,6 +95,6 @@ int main(int argc, char *argv[]) {
     free_grid(serial_grid, rows);
     free_grid(serial_new_grid, rows);
 
-    printf("Simulation completed successfully.\n");
+    printf("Simulation successfully completed.\n");
     return 0;
 }

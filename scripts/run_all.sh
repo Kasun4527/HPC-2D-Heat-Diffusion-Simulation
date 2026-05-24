@@ -12,6 +12,7 @@ rm -f "$REPO_ROOT/results/timing.csv" \
 
 "$SCRIPT_DIR/run_serial.sh"
 "$SCRIPT_DIR/run_openmp.sh"
+"$SCRIPT_DIR/run_pthreads.sh"
 "$SCRIPT_DIR/run_mpi.sh"
 "$REPO_ROOT/run_hybrid.sh"
 
