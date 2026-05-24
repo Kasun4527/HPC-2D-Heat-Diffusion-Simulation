@@ -110,6 +110,8 @@ int main(int argc, char *argv[]) {
     double time_taken = (end.tv_sec - start.tv_sec) +
                         (end.tv_nsec - start.tv_nsec) / 1e9;
 
+    printf("Execution time: %.6f seconds\n", time_taken);
+
     // Select the correct grid based on timesteps parity
     double **final_grid = (timesteps % 2 == 0) ? grid : new_grid;
 
